@@ -1,0 +1,40 @@
+name: Build Open Course Coupons Feed
+
+on:
+  schedule:
+    # 05:00 Asia/Ho_Chi_Minh = 22:00 UTC previous day
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-feed:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build coupon feed
+        run: |
+          python crawler/build_feed.py
+
+      - name: Commit updated feed
+        run: |
+          git config user.name "open-course-feed-bot"
+          git config user.email "open-course-feed-bot@users.noreply.github.com"
+          git add public/udemy/v2/
+          git diff --cached --quiet || git commit -m "Update open course coupon feed"
+          git push
